@@ -1,0 +1,87 @@
+---
+title: "FINAL PROJECT EDA"
+author: "Shivani Vogiral, Ajinkya Pawale, Sharanbasav Sumbad, Anuhya Sankranti"
+date: "11/23/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(tidyverse)
+library(rio)
+library(ggplot2)
+library(broom)
+library(grid)
+library(mgcv)
+library(jpeg)
+library(RCurl)
+library(GGally)
+library(data.table)
+```
+
+```{r}
+data = read.csv('Chicago_Crime-2019-2021.csv')
+```
+
+```{r}
+data_2019 = filter(data, year_x == "2019")
+```
+
+
+
+
+```{r}
+drop = c("date_y", "primary_type_y", "description_y", "location_description_y", "arrest_y", "domestic_y", "year_y", "updated_on_y", "location_y")
+data_2019 = data_2019[,!(names(data_2019) %in% drop)]
+```
+
+```{r}
+summary(data_2019)
+```
+
+Distribution of different types of crimes - BAR PLOT
+```{r}
+ggplot(data_2019, aes(y = primary_type_x)) +
+  geom_bar()
+
+crimes = data_2019$primary_type_x
+crimes = as.data.frame(table(crimes))
+crimes = crimes[order(crimes$Freq,decreasing = TRUE),]
+crimes = crimes[crimes$Freq > 5000,]
+```
+
+
+
+Different location of crimes - BAR PLOT
+```{r}
+locations = data_2019$location_description_x
+locations = as.data.frame(table(locations))
+locations = locations[order(locations$Freq,decreasing = TRUE),]
+locations = locations[1:9,]
+ggplot(locations, aes(y = Freq, x = locations))+
+  geom_point()
+```
+
+
+```{r}
+data_2019 = data_2019[data_2019$location_description_x %in% locations$locations,]
+data_2019 = data_2019[data_2019$primary_type_x %in% crimes$crimes,]
+```
+
+```{r}
+data_2019$Date = as.Date(data_2019$date_x)
+data_2019$Time <- format(as.POSIXct(data_2019$date_x), format = "%H:%M:%S")
+data_2019$Month<- strftime(data_2019$date_x, "%m")
+```
+
+```{r}
+ggplot(data_2019,aes(x = primary_type_x))+
+  geom_bar()+
+  facet_wrap(~ location_description_x)+
+  theme(axis.text.x = element_text(angle = 90))
+```
+```{r}
+write.csv(data_2019,'crimes_data_2019.csv')
+```
+
