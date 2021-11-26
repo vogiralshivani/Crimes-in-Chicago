@@ -1,0 +1,58 @@
+---
+title: "Final Project"
+author: "Shivani Vogiral"
+date: "11/25/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(tidyr)
+```
+
+```{r}
+crimes = read.csv('crimes_data_2019.csv')
+crimes <- crimes[order(crimes$date_x), ]
+```
+
+```{r}
+crimes$location_x = gsub("[()]", "", crimes$location_x)
+crimes = separate(data = crimes, col = location_x, into = c("x_coord", "y_coord"), sep = "\\,")
+crimes$x_coord = as.numeric(crimes$x_coord)
+crimes = drop_na(crimes)
+```
+
+
+```{r}
+ggplot(crimes,aes(x = primary_type_x))+
+  geom_bar()+
+  facet_wrap(~ location_description_x)+
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+```{r}
+crimes$Month = month.name[crimes$Month]
+all(crimes$Month %in% month.name)
+crimes$Month <- factor(crimes$Month, levels=month.name)
+```
+
+
+```{r}
+ggplot(crimes,aes(x = Month))+
+  geom_bar()+
+  facet_wrap(~location_description_x)+
+  theme(axis.text.x = element_text(angle = 90))
+```
+```{r}
+ggplot(crimes,aes(x = Month))+
+  geom_bar(alpha = 0.8)+
+  facet_wrap(~ primary_type_x)+
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+```{r}
+ggplot(crimes,aes(x = arrest_x))+
+  geom_histogram()
+```
+

@@ -1,5 +1,5 @@
 ---
-title: "FINAL PROJECT EDA"
+title: "Data Preprocessing EDA"
 author: "Shivani Vogiral, Ajinkya Pawale, Sharanbasav Sumbad, Anuhya Sankranti"
 date: "11/23/2021"
 output: html_document
@@ -60,7 +60,8 @@ locations = as.data.frame(table(locations))
 locations = locations[order(locations$Freq,decreasing = TRUE),]
 locations = locations[1:9,]
 ggplot(locations, aes(y = Freq, x = locations))+
-  geom_point()
+  geom_point()+
+  theme(axis.text.x = element_text(angle = 90))
 ```
 
 
@@ -81,6 +82,7 @@ ggplot(data_2019,aes(x = primary_type_x))+
   facet_wrap(~ location_description_x)+
   theme(axis.text.x = element_text(angle = 90))
 ```
+
 ```{r}
 write.csv(data_2019,'crimes_data_2019.csv')
 ```
