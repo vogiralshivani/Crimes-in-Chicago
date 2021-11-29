@@ -73,7 +73,7 @@ data_2019 = data_2019[data_2019$primary_type_x %in% crimes$crimes,]
 ```{r}
 data_2019$Date = as.Date(data_2019$date_x)
 data_2019$Time <- format(as.POSIXct(data_2019$date_x), format = "%H:%M:%S")
-data_2019$Month<- strftime(data_2019$date_x, "%m")
+data_2019$Month_num<- strftime(data_2019$date_x, "%m")
 ```
 
 ```{r}
@@ -82,6 +82,61 @@ ggplot(data_2019,aes(x = primary_type_x))+
   facet_wrap(~ location_description_x)+
   theme(axis.text.x = element_text(angle = 90))
 ```
+
+```{r}
+data_2019 = data_2019 %>% mutate(location_description_num=recode(location_description_x, 'ALLEY' = 1, 'RESTAURANT' = 2,'SMALL RETAIL STORE'=3,'PARKING LOT/GARAGE(NON.RESID.)'=4,'OTHER'=5,'SIDEWALK'=6,'APARTMENT'=7,'RESIDENCE'=8,'STREET'=9,.default=0))
+```
+
+```{r}
+data_2019 = data_2019 %>% mutate(primary_type_num=recode(primary_type_x, 'THEFT' = 12, 'BATTERY' = 11,'CRIMINAL DAMAGE'=10,'ASSAULT'=9,'DECEPTIVE PRACTICE'=8,'OTHER OFFENSE'=7,'NARCOTICS'=6,'BURGLARY'=5,'MOTOR VEHICLE THEFT'=4,'ROBBERY'=3,'CRIMINAL TRESPASS'=2,'WEAPONS VIOLATION'=1))
+```
+
+```{r}
+data_2019$Month = as.numeric(data_2019$Month )
+```
+
+
+```{r}
+data_2019$Month_Name = month.name[data_2019$Month]
+all(data_2019$Month_Name %in% month.name)
+data_2019$Month_Name <- factor(data_2019$Month_Name, levels=month.name)
+```
+
+
+
+```{r}
+data_2019$arrest_num[data_2019$arrest_x == 'True'] = 1
+data_2019$arrest_num[data_2019$arrest_x == 'False'] = 0
+```
+
+```{r}
+data_2019$domestic_num[data_2019$domestic_x == 'True'] = 1
+data_2019$domestic_num[data_2019$domestic_x == 'False'] = 0
+```
+
+```{r}
+data_2019 <- subset( data_2019, select = -c(Time, description_x) )
+```
+
+
+```{r}
+data_2019$day <- weekdays(as.Date(data_2019$Date))
+```
+
+
+```{r}
+data_2019$location_x = gsub("[()]", "", data_2019$location_x)
+data_2019 = separate(data = data_2019, col = location_x, into = c("x_coord", "y_coord"), sep = "\\,")
+data_2019$x_coord = as.numeric(data_2019$x_coord)
+data_2019$y_coord = as.numeric(data_2019$y_coord)
+data_2019 = drop_na(data_2019)
+```
+
+
+```{r}
+data_2019 = data_2019 %>% mutate(day_num=recode(day, 'Monday' = 1, 'Tuesday' = 2,'Wednesday'=3,'Thursday'=4,'Friday'=5,'Saturday'=6,'Sunday'=7))
+```
+
 
 ```{r}
 write.csv(data_2019,'crimes_data_2019.csv')
