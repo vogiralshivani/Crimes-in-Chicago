@@ -214,7 +214,11 @@ summary(Target.logit3)
 ```{r}
 pR2(Target.logit3)
 ```
+```{r}
+ggplot(crimes,aes(x = crimes$primary_type_x,fill = crimes$arrest_x)) + theme(axis.text.x = element_text(angle = 90)) +
+    geom_bar(position = "fill")
 
+```
 
 
 
