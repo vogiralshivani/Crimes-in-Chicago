@@ -5,23 +5,37 @@ date: "11/25/2021"
 output: html_document
 ---
 
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-library(tidyr)
+cb_palette = c("#999999", "#E69F00", "#56B4E9", "#009E73",
+"#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+library(stringr)
+library(reshape2)
+library(ggplot2)
+library(MASS)
+library(jpeg)
+library(RCurl)
+library(grid)
+library(png)
+library(GGally)
+library(dplyr)
+library(mgcv)
+library(pscl)
 ```
 
 ```{r}
 crimes = read.csv('crimes_data_2019.csv')
-crimes <- crimes[order(crimes$date_x), ]
+crimes <- crimes[order(crimes$Date), ]
+crimes$Month_Name = factor(crimes$Month_Name , levels = month.name )
+crimes$day = factor(crimes$day , levels= c("Sunday", "Monday", 
+    "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
 ```
 
-```{r}
-crimes$location_x = gsub("[()]", "", crimes$location_x)
-crimes = separate(data = crimes, col = location_x, into = c("x_coord", "y_coord"), sep = "\\,")
-crimes$x_coord = as.numeric(crimes$x_coord)
-crimes = drop_na(crimes)
-```
+
+
+
 
 
 ```{r}
@@ -31,19 +45,21 @@ ggplot(crimes,aes(x = primary_type_x))+
   theme(axis.text.x = element_text(angle = 90))
 ```
 
-```{r}
-crimes$Month = month.name[crimes$Month]
-all(crimes$Month %in% month.name)
-crimes$Month <- factor(crimes$Month, levels=month.name)
-```
-
 
 ```{r}
-ggplot(crimes,aes(x = Month))+
+ggplot(crimes,aes(x = Month_Name))+
   geom_bar()+
   facet_wrap(~location_description_x)+
   theme(axis.text.x = element_text(angle = 90))
 ```
+```{r}
+ggplot(crimes,aes(x = day))+
+  geom_bar()+
+  facet_wrap(~location_description_x)+
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+
 ```{r}
 ggplot(crimes,aes(x = Month))+
   geom_bar(alpha = 0.8)+
@@ -51,8 +67,154 @@ ggplot(crimes,aes(x = Month))+
   theme(axis.text.x = element_text(angle = 90))
 ```
 
-```{r}
-ggplot(crimes,aes(x = arrest_x))+
-  geom_histogram()
+```{r fig.width=6}
+ggplot(crimes,aes(y = arrest_num,x = location_description_num)) +
+geom_jitter(height = 0.1, width = 0.25) + facet_wrap(~primary_type_num)+
+geom_smooth(method = "glm",method.args = list(family = "binomial"))+theme(axis.text.x = element_text(angle = 90)) + scale_x_discrete(name ="Location Description", 
+                    limits=c("1","2","3","4","5","6","7","8","9"))
 ```
+```{r fig.width=6}
+ggplot(crimes,aes(y = arrest_num,x = day_num)) +
+geom_jitter(height = 0.1, width = 0.25) + facet_wrap(~Month_num)+
+geom_smooth(method = "glm",method.args = list(family = "binomial"))+theme(axis.text.x = element_text(angle = 90)) + scale_x_discrete(name ="Week Days", 
+                    limits=c("1","2","3","4","5","6","7"))
+```
+```{r fig.width=6}
+ggplot(crimes,aes(y = arrest_num,x = location_description_num)) +
+geom_jitter(height = 0.1, width = 0.25) + facet_wrap(~day_num)+
+geom_smooth(method = "glm",method.args = list(family = "binomial"))+theme(axis.text.x = element_text(angle = 90)) + scale_x_discrete(name ="Location Description", 
+                    limits=c("1","2","3","4","5","6","7","8","9"))
+```
+
+
+```{r }
+ggplot(crimes,aes(y = arrest_num,x = location_description_num)) +
+geom_jitter(height = 0.1, width = 0.25) + facet_wrap(~Month_num)+
+geom_smooth(method = "glm",method.args = list(family = "binomial"))+theme(axis.text.x = element_text(angle = 90)) + scale_x_discrete(name ="Location Description", 
+                    limits=c("1","2","3","4","5","6","7","8","9"))
+```
+
+```{r}
+ggplot(crimes,aes(y = arrest_num,x = Month_num)) +
+geom_jitter(height = 0.1, width = 0.25) + facet_wrap(~primary_type_num)+
+geom_smooth(method = "glm",method.args = list(family = "binomial"))+theme(axis.text.x = element_text(angle = 90)) + scale_x_discrete(name ="Month of the year", 
+                    limits=c("1","2","3","4","5","6","7","8","9","10","11","12"))
+```
+
+
+```{r fig.width=6}
+ggplot(crimes,aes(y = arrest_num,x = day_num)) +
+geom_jitter(height = 0.1, width = 0.25) + facet_wrap(~primary_type_num)+
+geom_smooth(method = "glm",method.args = list(family = "binomial"))+theme(axis.text.x = element_text(angle = 90)) + scale_x_discrete(name ="Days of Week", 
+                    limits=c("1","2","3","4","5","6","7"))
+```
+
+```{r}
+ggplot(crimes,aes(y = arrest_num,x = domestic_num)) +
+geom_jitter(height = 0.1, width = 0.25) +
+geom_smooth(method = "glm",method.args = list(family = "binomial"))+theme(axis.text.x = element_text(angle = 90))
+```
+
+
+```{r}
+min_x = min(crimes$x_coord)
+max_x = max(crimes$x_coord)
+min_y = min(crimes$y_coord)
+max_y = max(crimes$y_coord)
+```
+
+```{r}
+ggplot(crimes,aes(y = y_coord,x = x_coord)) +
+geom_point(aes(color=arrest_num),alpha=0.4,size=1) +
+geom_smooth(method = "glm",method.args = list(family = "binomial"))+theme(axis.text.x = element_text(angle = 90))+ xlim(41.625,42.125) +ylim(-88,-87)
+```
+
+```{r}
+lis = c('arrest_num','day_num','Month_num','primary_type_num','location_description_num')
+ggpairs(crimes[,lis])
+```
+```{r}
+Target.logit1 = glm(arrest_num ~  primary_type_num,
+family = binomial, data = crimes)
+summary(Target.logit1)
+```
+
+```{r}
+pR2(Target.logit1)
+```
+
+
+```{r}
+target.logit1.df = crimes
+target.logit1.df$.fitted = fitted.values(Target.logit1)
+target.logit1.df$.resid = residuals(Target.logit1, type = "response")
+
+ggplot(target.logit1.df, aes(x = .fitted, y = .resid)) +
+geom_point() +
+geom_smooth(method = "loess", method.args = list(degree = 1),se=FALSE) +
+xlab("Fitted values") + ylab("Residuals") + ggtitle('Residuals vs Fitted Values for Single Predictor Model')
+```
+
+**Plotting the Residuals against the Crime Type**
+```{r}
+ggplot(target.logit1.df, aes(x = primary_type_num, y = .resid)) +
+geom_point() +
+geom_smooth(method = "loess", method.args = list(degree = 1),se=FALSE) +
+xlab("Shot Distance") + ylab("Residuals") + ggtitle("Residuals vs Crime Type for Single Predictor Model")
+```
+
+
+
+```{r}
+Target.logit2 = glm(arrest_num ~  primary_type_num*location_description_num,
+family = binomial, data = crimes)
+summary(Target.logit2)
+```
+```{r}
+pR2(Target.logit2)
+```
+
+
+
+```{r}
+target.logit2.df = crimes
+target.logit2.df$.fitted = fitted.values(Target.logit2)
+target.logit2.df$.resid = residuals(Target.logit1, type = "response")
+
+ggplot(target.logit2.df, aes(x = .fitted, y = .resid)) +
+geom_point() +
+geom_smooth(method = "loess", method.args = list(degree = 1),se=FALSE) +
+xlab("Fitted values") + ylab("Residuals") + ggtitle('Residuals vs Fitted Values for Interactive Model 1')
+```
+
+
+
+**Plotting the Residuals against the Crime Type**
+```{r}
+ggplot(target.logit2.df, aes(x = primary_type_num, y = .resid)) +
+geom_point() +
+geom_smooth(method = "loess", method.args = list(degree = 1),se=FALSE) +
+xlab("Crime Type") + ylab("Residuals") 
+```
+
+```{r}
+ggplot(target.logit2.df, aes(x = location_description_num, y = .resid)) +
+geom_point() +
+geom_smooth(method = "loess", method.args = list(degree = 1),se=FALSE) +
+xlab("Location") + ylab("Residuals") 
+```
+
+
+
+```{r}
+Target.logit3 = glm(arrest_num ~  primary_type_num*location_description_num + primary_type_num*Month_num + primary_type_num*day_num,
+family = binomial, data = crimes)
+summary(Target.logit3)
+```
+```{r}
+pR2(Target.logit3)
+```
+
+
+
 
