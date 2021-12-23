@@ -1,0 +1,586 @@
+---
+title: "Final Project"
+author: "Shivani Vogiral"
+date: "11/25/2021"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+cb_palette = c("#999999", "#E69F00", "#56B4E9", "#009E73",
+"#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+library(stringr)
+library(reshape2)
+library(ggplot2)
+library(MASS)
+library(jpeg)
+library(RCurl)
+library(grid)
+library(png)
+library(GGally)
+library(dplyr)
+library(mgcv)
+library(pscl)
+```
+
+```{r}
+crimes = read.csv('crimes_data_2019.csv')
+crimes <- crimes[order(crimes$Date), ]
+crimes$Month_Name = factor(crimes$Month_Name , levels = month.name )
+crimes$day = factor(crimes$day , levels= c("Sunday", "Monday", 
+    "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
+```
+
+
+
+
+```{r}
+ggplot(crimes,aes(x = primary_type_x))+
+  geom_bar()+
+  facet_wrap(~ location_description_x)+
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+
+```{r}
+ggplot(crimes,aes(x = Month_Name))+
+  geom_bar()+
+  facet_wrap(~location_description_x)+
+  theme(axis.text.x = element_text(angle = 90))
+```
+```{r}
+ggplot(crimes,aes(x = day))+
+  geom_bar()+
+  facet_wrap(~location_description_x)+
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+
+```{r}
+ggplot(crimes,aes(x = Month))+
+  geom_bar(alpha = 0.8)+
+  facet_wrap(~ primary_type_x)+
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+```{r fig.width=6}
+ggplot(crimes,aes(y = arrest_x,x = location_description_x,color=arrest_x)) +
+geom_jitter(height = 0.1, width = 0.25) + facet_wrap(~primary_type_x)+theme(axis.text.x = element_text(angle = 90)) + xlab("Location") + ylab("arrest made")  +scale_color_discrete(name = "Arrest Made") + ggtitle("Arrest Made by Location facet by Crime Type")
+```
+
+```{r fig.width=6}
+ggplot(crimes,aes(y = arrest_x,x = Month_Name,color=arrest_x)) +
+geom_jitter(height = 0.1, width = 0.25) + facet_wrap(~primary_type_x)+theme(axis.text.x = element_text(angle = 90)) + xlab("Month") + ylab("arrest made")  +scale_color_discrete(name = "Arrest Made") + ggtitle("Arrest Made per Month facet by Crime Type")
+```
+
+
+
+```{r fig.width=6}
+ggplot(crimes,aes(y = arrest_x,x = day,color=arrest_x)) +
+geom_jitter(height = 0.1, width = 0.25) + facet_wrap(~primary_type_x)+theme(axis.text.x = element_text(angle = 90)) + xlab("Week Day") + ylab("arrest made")  +scale_color_discrete(name = "Arrest Made") + ggtitle("Arrest Made per Week Day facet by Crime Type")
+```
+
+
+```{r fig.width=6}
+ggplot(crimes,aes(y = arrest_x,x = Month_Name,color=arrest_x)) +
+geom_jitter(height = 0.1, width = 0.25) + facet_wrap(~location_description_x)+theme(axis.text.x = element_text(angle = 90)) + xlab("Month") + ylab("arrest made")  +scale_color_discrete(name = "Arrest Made") + ggtitle("Arrest Made per Month Day facet by Location")
+```
+
+
+```{r fig.width=6}
+ggplot(crimes,aes(y = arrest_x,x = day,color=arrest_x)) +
+geom_jitter(height = 0.1, width = 0.25) + facet_wrap(~location_description_x)+theme(axis.text.x = element_text(angle = 90)) + xlab("Week Day") + ylab("arrest made")  +scale_color_discrete(name = "Arrest Made") + ggtitle("Arrest Made per Week Day facet by Lcoation")
+```
+
+
+
+```{r}
+ggplot(crimes,aes(y = arrest_num,x = domestic_x)) +
+geom_jitter(height = 0.1, width = 0.25) +
+geom_smooth(method = "glm",method.args = list(family = "binomial"))+theme(axis.text.x = element_text(angle = 90))
+```
+
+
+```{r}
+min_x = min(crimes$x_coord)
+max_x = max(crimes$x_coord)
+min_y = min(crimes$y_coord)
+max_y = max(crimes$y_coord)
+```
+
+```{r}
+ggplot(crimes,aes(y = y_coord,x = x_coord)) +
+geom_point(aes(color=arrest_num),alpha=0.4,size=1) +
+geom_smooth(method = "glm",method.args = list(family = "binomial"))+theme(axis.text.x = element_text(angle = 90))+ xlim(41.625,42.125) +ylim(-88,-87)
+```
+
+```{r}
+lis = c('arrest_num','day_num','Month_num','primary_type_x','location_description_x')
+ggpairs(crimes[,lis])
+```
+
+
+
+
+
+
+
+
+
+
+```{r fig.height=3}
+ggplot(crimes,aes(x = crimes$primary_type_x,fill = crimes$arrest_x)) + theme(axis.text.x = element_text(angle = 90)) +
+    geom_bar(position = "fill") +scale_fill_discrete(name = "Crime Leading to Arrest") + ylab("Proportion of Arrest") + xlab("Crime Type") + ggtitle("Proportion of arrest made for each type of crime")
+```
+
+```{r fig.height=3}
+ggplot(crimes,aes(x = crimes$domestic_x,fill = crimes$arrest_x)) + theme(axis.text.x = element_text(angle = 90)) +
+    geom_bar(position = "fill") +scale_fill_discrete(name = "Crime Leading to Arrest") + ylab("Proportion of Arrest") + xlab("Domestic Crime") + ggtitle("Proportion of arrest made for domestic crime (T/F) facted by crime type") + facet_wrap(~primary_type_x)
+```
+
+```{r fig.height=3}
+ggplot(crimes,aes(x = crimes$domestic_x,fill = crimes$arrest_x)) + theme(axis.text.x = element_text(angle = 90)) +
+    geom_bar(position = "fill") +scale_fill_discrete(name = "Crime Leading to Arrest") + ylab("Proportion of Arrest") + xlab("Domestic Crime") + ggtitle("Proportion of arrest made for domestic crime (T/F) facted by Location") + facet_wrap(~location_description_x)
+```
+
+
+```{r fig.height=3}
+ggplot(crimes,aes(x = crimes$location_description_x,fill = crimes$arrest_x)) + theme(axis.text.x = element_text(angle = 90)) +
+    geom_bar(position = "fill") +scale_fill_discrete(name = "Crime Leading to Arrest") + ylab("Proportion of Arrest") + xlab("Location") + ggtitle("Proportion of arrest made for each crime location")
+```
+
+
+```{r }
+crimes_theft = subset(crimes,primary_type_x=='THEFT')
+```
+
+```{r}
+plotdata_t <- crimes_theft %>%
+  group_by(Month_Name,arrest_x) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+```
+
+```{r fig.height=3}
+ggplot(plotdata_t,aes(x = plotdata_t$Month_Name,y= pct,fill = plotdata_t$arrest_x)) + theme(axis.text.x = element_text(angle = 90)) +
+    geom_bar(stat = "identity",
+           position = "fill") +scale_fill_discrete(name = "Crime Leading to Arrest") + ylab("Proportion of Arrest") + xlab("Location") + ggtitle("Proportion of arrest made for each type of crime") + geom_text(aes(label = lbl), 
+            size = 3, 
+            position = position_stack(vjust = 0.5)) + ylab("Proportion of Arrest") + xlab("Month") + ggtitle("Monthly proportion of arrests made for Thefts")
+```
+
+
+
+```{r}
+crimes_assault = subset(crimes,primary_type_x=='ASSAULT')
+```
+
+```{r}
+plotdata_t_assault <- crimes_assault %>%
+  group_by(Month_Name,arrest_x) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+```
+
+```{r fig.height=3}
+ggplot(plotdata_t_assault,aes(x = plotdata_t_assault$Month_Name,y= pct,fill = plotdata_t_assault$arrest_x)) + theme(axis.text.x = element_text(angle = 90)) +
+    geom_bar(stat = "identity",
+           position = "fill") +scale_fill_discrete(name = "Crime Leading to Arrest") + ylab("Proportion of Arrest") + xlab("Location") + ggtitle("Proportion of arrest made for each type of crime") + geom_text(aes(label = lbl), 
+            size = 3, 
+            position = position_stack(vjust = 0.5)) + ylab("Proportion of Arrest") + xlab("Month") + ggtitle("Monthly proportion of arrests made for Assaults")
+```
+
+```{r}
+plotdata_t_assault_daily <- crimes_assault %>%
+  group_by(day,arrest_x) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+```
+
+```{r fig.height=3}
+ggplot(plotdata_t_assault_daily,aes(x = plotdata_t_assault_daily$day,y= pct,fill = plotdata_t_assault_daily$arrest_x)) + theme(axis.text.x = element_text(angle = 90)) +
+    geom_bar(stat = "identity",
+           position = "fill") +scale_fill_discrete(name = "Crime Leading to Arrest") + ylab("Proportion of Arrest") + xlab("Location") + ggtitle("Proportion of arrest made for each type of crime") + geom_text(aes(label = lbl), 
+            size = 3, 
+            position = position_stack(vjust = 0.5)) + ylab("Proportion of Arrest") + xlab("Day of the week") + ggtitle("Proportion of arrests made for Assaults based on days of the week")
+```
+
+```{r}
+plotdata_t_theft_daily <- crimes_theft %>%
+  group_by(day,arrest_x) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+```
+
+```{r fig.height=3}
+ggplot(plotdata_t_theft_daily,aes(x = plotdata_t_theft_daily$day,y= pct,fill = plotdata_t_theft_daily$arrest_x)) + theme(axis.text.x = element_text(angle = 90)) +
+    geom_bar(stat = "identity",
+           position = "fill") +scale_fill_discrete(name = "Crime Leading to Arrest") + ylab("Proportion of Arrest") + xlab("Location") + ggtitle("Proportion of arrest made for each type of crime") + geom_text(aes(label = lbl), 
+            size = 3, 
+            position = position_stack(vjust = 0.5)) + ylab("Proportion of Arrest") + xlab("Day of the week") + ggtitle("Proportion of arrests made for Thefts based on days of the week")
+```
+
+```{r}
+crimes_street = subset(crimes,location_description_x == "STREET")
+```
+
+
+```{r}
+plotdata_assault_location <- crimes_street %>%
+  group_by(Month_Name,arrest_x) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+```
+
+```{r fig.height=3}
+ggplot(plotdata_assault_location,aes(x = plotdata_assault_location$Month_Name,y= pct,fill = plotdata_assault_location$arrest_x)) + theme(axis.text.x = element_text(angle = 90)) +
+    geom_bar(stat = "identity",
+           position = "fill") +scale_fill_discrete(name = "Arrest Made") + ylab("Proportion of Arrest") + xlab("Location") + ggtitle("Proportion of arrest made for each type of crime") + geom_text(aes(label = lbl), 
+            size = 3, 
+            position = position_stack(vjust = 0.5)) + ylab("Proportion of Arrest") + xlab("Month") + ggtitle("Monthly proportion of arrests made for crimes on Street")
+```
+
+```{r}
+crimes_sidewalk = subset(crimes,location_description_x == "SIDEWALK")
+```
+
+
+```{r}
+plotdata_assault_sidewalk <- crimes_sidewalk %>%
+  group_by(Month_Name,arrest_x) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+```
+
+```{r fig.height=3}
+ggplot(plotdata_assault_sidewalk,aes(x = plotdata_assault_sidewalk$Month_Name,y= pct,fill = plotdata_assault_sidewalk$arrest_x)) + theme(axis.text.x = element_text(angle = 90)) +
+    geom_bar(stat = "identity",
+           position = "fill") +scale_fill_discrete(name = "Arrest Made") + ylab("Proportion of Arrest") + xlab("Location") + ggtitle("Proportion of arrest made for each type of crime") + geom_text(aes(label = lbl), 
+            size = 3, 
+            position = position_stack(vjust = 0.5)) + ylab("Proportion of Arrest") + xlab("Month") + ggtitle("Monthly proportion of arrests made for crimes on Sidewalk")
+```
+
+```{r}
+plotdata_t_theft_daily <- crimes_theft %>%
+  group_by(location_description_x,arrest_x) %>%
+  summarize(n = n()) %>% 
+  mutate(pct = n/sum(n),
+         lbl = scales::percent(pct))
+```
+
+```{r fig.height=3}
+ggplot(plotdata_t_theft_daily,aes(x = plotdata_t_theft_daily$location_description_x,y= pct,fill = plotdata_t_theft_daily$arrest_x)) + theme(axis.text.x = element_text(angle = 90)) +
+    geom_bar(stat = "identity",
+           position = "fill") +scale_fill_discrete(name = "Arrest made") + ylab("Proportion of Arrest") + xlab("Location") + ggtitle("Proportion of arrest made for each type of crime") + geom_text(aes(label = lbl), 
+            size = 3, 
+            position = position_stack(vjust = 0.5)) + ylab("Proportion of Arrest") + xlab("Location of crime") + ggtitle("Proportion of arrests made for Thefts at different locations")
+```
+
+
+
+```{r}
+crimes_model1 <- glm(arrest_num ~ primary_type_x + location_description_x ,family= 'binomial', data = crimes)
+summary(crimes_model1)
+```
+
+```{r}
+target.model.df = crimes
+target.model.df$.fitted = fitted.values(crimes_model1)
+target.model.df$.resid = residuals(crimes_model1, type = "response")
+
+ggplot(target.model.df, aes(x = .fitted, y = .resid)) +
+geom_point() +
+geom_smooth(method = "loess", method.args = list(degree = 1),se=FALSE) +
+xlab("Fitted values") + ylab("Residuals") + ggtitle('Residuals vs Fitted Values')
+```
+
+
+
+```{r fig.height=4}
+ggplot(target.model.df, aes(x = location_description_x, y = .resid)) +
+geom_point() +
+geom_smooth(method = "loess", method.args = list(degree = 1),se=FALSE) +
+xlab("Location") + ylab("Residuals") + ggtitle("Residuals vs Location")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+```{r fig.height=4}
+ggplot(target.model.df, aes(x = primary_type_x, y = .resid)) +
+geom_point() +
+geom_smooth(method = "loess", method.args = list(degree = 1),se=FALSE) +
+xlab("Crime Type") + ylab("Residuals") + ggtitle("Residuals vs Crime Type")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+
+
+
+```{r}
+crimes_model_2 <- glm(arrest_num ~ primary_type_x * location_description_x  , family= 'binomial',data = crimes)
+summary(crimes_model_2) 
+```
+
+```{r}
+target.model.df = crimes
+target.model.df$.fitted = fitted.values(crimes_model_2)
+target.model.df$.resid = residuals(crimes_model_2, type = "response")
+
+ggplot(target.model.df, aes(x = .fitted, y = .resid)) +
+geom_point() +
+geom_smooth(method = "loess", method.args = list(degree = 1),se=FALSE) +
+xlab("Fitted values") + ylab("Residuals") + ggtitle('Residuals vs Fitted Values')
+```
+
+
+```{r fig.height=4}
+ggplot(target.model.df, aes(x = location_description_x, y = .resid)) +
+geom_point() +
+geom_smooth(method = "loess", method.args = list(degree = 1),se=FALSE) +
+xlab("Location") + ylab("Residuals") + ggtitle("Residuals vs Location faceted by Crime Type")  + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + facet_wrap(~primary_type_x)
+```
+
+```{r}
+crimes_model_3 <- glm(arrest_num ~ primary_type_x  + location_description_x + domestic_x , family= 'binomial',data = crimes)
+summary(crimes_model_3)
+```
+
+
+
+```{r}
+crimes_new = expand.grid(primary_type_x = c("ASSAULT", "BATTERY", "BURGLARY", "CRIMINAL DAMAGE" , "CRIMINAL TRESPASS" ,"DECEPTIVE PRACTICE" , "MOTOR VEHICLE THEFT", "NARCOTICS" , "OTHER OFFENSE" , "ROBBERY" , "SEXUAL OFFENSE AND RELATED", "THEFT" , "WEAPONS VIOLATION"), location_description_x = c("ALLEY", "APARTMENT","OTHER","PARKING LOT/GARAGE(NON.RESID.)","RESIDENCE","RESTAURANT", "SIDEWALK" , "SMALL RETAIL STORE" , "STREET") , domestic_x  = c("True","False"))
+```
+
+```{r}
+crimes_new$arrest_num_probablity = predict(crimes_model_3, crimes_new, type="response")
+crimes$probablities = predict(crimes_model_3, crimes, type="response")
+```
+
+```{r}
+crimes_new$arrest_num = ifelse(crimes_new$arrest_num_probablity > 0.5,1,0)
+```
+
+```{r fig.height=5}
+ggplot(crimes,aes(x = crimes$primary_type_x,fill = crimes$arrest_x)) + theme(axis.text.x = element_text(angle = 90)) +
+    geom_bar(position = "fill") +scale_fill_discrete(name = "Crime Leading to Arrest") + ylab("Proportion of Arrest") + xlab("Crime Type") + ggtitle("Proportion of arrest made for each type of crime")
+```
+
+
+```{r}
+sex_og <- crimes  %>%  filter(primary_type_x  == "SEXUAL OFFENSE AND RELATED")
+sex_new <- crimes_new %>%  filter(primary_type_x  == "SEXUAL OFFENSE AND RELATED")
+
+sex_og$primary_type_x = "sex_offence_orig"
+sex_new$primary_type_x = "sex_offence_predicted"
+
+sexog <- subset(sex_og, select = c(primary_type_x, location_description_x, domestic_x ,arrest_num))
+sexnew <- subset(sex_new, select = c(primary_type_x, location_description_x, domestic_x ,arrest_num))
+
+sex_offence<-rbind(sexog, sexnew)
+
+sex_offence$arrest_x <- as.logical(sex_offence$arrest_num)
+
+ggplot(sex_offence,aes(x = sex_offence$primary_type_x,fill = sex_offence$arrest_x)) + theme(axis.text.x = element_text(angle = 0)) +
+    geom_bar(position = "fill") +scale_fill_discrete(name = "Crime Leading to Arrest") + ylab("Proportion of Arrest") + xlab("Crime Type") + ggtitle("Proportion of arrest made in  original data and  modal predictions for Sex offence")
+```
+
+
+```{r}
+WEAPONS_og <- crimes  %>%  filter(primary_type_x  == "WEAPONS VIOLATION")
+WEAPONS_new <- crimes_new %>%  filter(primary_type_x  == "WEAPONS VIOLATION")
+WEAPONS_og$primary_type_x = "WEAPONS_orig"
+WEAPONS_new$primary_type_x = "WEAPONS_pred"
+
+WEAPONSog <- subset(WEAPONS_og, select = c(primary_type_x, location_description_x, domestic_x ,arrest_num))
+WEAPONSnew <- subset(WEAPONS_new, select = c(primary_type_x, location_description_x, domestic_x ,arrest_num))
+
+WEAPONS <-rbind(WEAPONSog, WEAPONSnew)
+
+WEAPONS$arrest_x <- as.logical(WEAPONS$arrest_num)
+
+ggplot(WEAPONS,aes(x = WEAPONS$primary_type_x,fill = WEAPONS$arrest_x)) + theme(axis.text.x = element_text(angle = 0)) +
+    geom_bar(position = "fill") +scale_fill_discrete(name = "Crime Leading to Arrest") + ylab("Proportion of Arrest") + xlab("Crime Type") + ggtitle("Proportion of Arrest made in  original data and the modal predictions for Weapons Violation")
+```
+
+```{r fig.height=3}
+ggplot(crimes,aes(x = crimes$location_description_x,fill = crimes$arrest_x)) + theme(axis.text.x = element_text(angle = 90)) +
+    geom_bar(position = "fill") +scale_fill_discrete(name = "Crime Leading to Arrest") + ylab("Proportion of Arrest") + xlab("Location") + ggtitle("Proportion of arrest made for each crime location")
+```
+
+
+```{r}
+ASSAULT_og <- crimes  %>%  filter(primary_type_x  == "ASSAULT")
+ASSAULT_new <- crimes_new %>%  filter(primary_type_x  == "ASSAULT")
+ASSAULT_og$primary_type_x = "ASSAULT_orig"
+ASSAULT_new$primary_type_x = "ASSAULT_pred"
+
+ASSAULTog <- subset(ASSAULT_og, select = c(primary_type_x, location_description_x, domestic_x ,arrest_num))
+ASSAULTnew <- subset(ASSAULT_new, select = c(primary_type_x, location_description_x, domestic_x ,arrest_num))
+
+ASSAULT <-rbind(ASSAULTog, ASSAULTnew)
+
+ASSAULT$arrest_x <- as.logical(ASSAULT$arrest_num)
+
+ggplot(ASSAULT,aes(x = ASSAULT$primary_type_x,fill = ASSAULT$arrest_x)) + theme(axis.text.x = element_text(angle = 0)) +
+    geom_bar(position = "fill") +scale_fill_discrete(name = "Crime Leading to Arrest") + ylab("Proportion of Arrest") + xlab("Crime Type") + ggtitle("Proportion of Arrest made in  original data and the modal predictions for Assult")
+```
+```{r}
+SIDEWALK_og <- crimes  %>%  filter(location_description_x  == "SIDEWALK")
+SIDEWALK_new <- crimes_new %>%  filter(location_description_x  == "SIDEWALK")
+SIDEWALK_og$location_description_x = "SIDEWALK_orig"
+SIDEWALK_new$location_description_x = "SIDEWALK_pred"
+
+SIDEWALKog <- subset(SIDEWALK_og, select = c(primary_type_x, location_description_x, domestic_x ,arrest_num))
+SIDEWALKnew <- subset(SIDEWALK_new, select = c(primary_type_x, location_description_x, domestic_x ,arrest_num))
+
+SIDEWALK <-rbind(SIDEWALKog, SIDEWALKnew)
+
+SIDEWALK$arrest_x <- as.logical(SIDEWALK$arrest_num)
+
+ggplot(SIDEWALK,aes(x = SIDEWALK$location_description_x,fill = SIDEWALK$arrest_x)) + theme(axis.text.x = element_text(angle = 0)) +
+    geom_bar(position = "fill") +scale_fill_discrete(name = "Crime Leading to Arrest") + ylab("Proportion of Arrest") + xlab("Location Type") + ggtitle("Proportion of Arrest made in  original data and the modal predictions for SideWalk location")
+```
+```{r}
+RESIDENCE_og <- crimes  %>%  filter(location_description_x  == "RESIDENCE")
+RESIDENCE_new <- crimes_new %>%  filter(location_description_x  == "RESIDENCE")
+RESIDENCE_og$location_description_x = "RESIDENCE_orig"
+RESIDENCE_new$location_description_x = "RESIDENCE_pred"
+
+RESIDENCEog <- subset(RESIDENCE_og, select = c(primary_type_x, location_description_x, domestic_x ,arrest_num))
+RESIDENCEnew <- subset(RESIDENCE_new, select = c(primary_type_x, location_description_x, domestic_x ,arrest_num))
+
+RESIDENCE <-rbind(RESIDENCEog, RESIDENCEnew)
+
+RESIDENCE$arrest_x <- as.logical(RESIDENCE$arrest_num)
+
+ggplot(RESIDENCE,aes(x = RESIDENCE$location_description_x,fill = RESIDENCE$arrest_x)) + theme(axis.text.x = element_text(angle = 0)) +
+    geom_bar(position = "fill") +scale_fill_discrete(name = "Crime Leading to Arrest") + ylab("Proportion of Arrest") + xlab("Location Type") + ggtitle("Proportion of Arrest made in  original data and the modal predictions for RESIDENCE location")
+```
+```{r}
+OTHER_og <- crimes  %>%  filter(location_description_x  == "OTHER")
+OTHER_new <- crimes_new %>%  filter(location_description_x  == "OTHER")
+OTHER_og$location_description_x = "OTHER_orig"
+OTHER_new$location_description_x = "OTHER_pred"
+
+OTHERog <- subset(OTHER_og, select = c(primary_type_x, location_description_x, domestic_x ,arrest_num))
+OTHERnew <- subset(OTHER_new, select = c(primary_type_x, location_description_x, domestic_x ,arrest_num))
+
+OTHER <-rbind(OTHERog, OTHERnew)
+
+OTHER$arrest_x <- as.logical(OTHER$arrest_num)
+
+ggplot(OTHER,aes(x = OTHER$location_description_x,fill = OTHER$arrest_x)) + theme(axis.text.x = element_text(angle = 0)) +
+    geom_bar(position = "fill") +scale_fill_discrete(name = "Crime Leading to Arrest") + ylab("Proportion of Arrest") + xlab("Location  Type") + ggtitle("Proportion of Arrest made in original data and the modal predictions for OTHER location")
+```
+```{r fig.height=3}
+ggplot(crimes,aes(x = crimes$domestic_x,fill = crimes$arrest_x)) + theme(axis.text.x = element_text(angle = 90)) +
+    geom_bar(position = "fill") +scale_fill_discrete(name = "Crime Leading to Arrest") + ylab("Proportion of Arrest") + xlab("Location") + ggtitle("Proportion of arrest made for Domestic crime type")
+```
+
+```{r}
+True_og <- crimes  %>%  filter(domestic_x  == "True")
+True_new <- crimes_new %>%  filter(domestic_x  == "True")
+True_og$domestic_x = "True_orig"
+True_new$domestic_x = "True_pred"
+
+Trueog <- subset(True_og, select = c(primary_type_x, location_description_x, domestic_x ,arrest_num))
+Truenew <- subset(True_new, select = c(primary_type_x, location_description_x, domestic_x ,arrest_num))
+
+True <-rbind(Trueog, Truenew)
+True$arrest_x <- as.logical(True$arrest_num)
+
+ggplot(True,aes(x = True$domestic_x,fill = True$arrest_x)) + theme(axis.text.x = element_text(angle = 0)) +
+    geom_bar(position = "fill") +scale_fill_discrete(name = "Crime Leading to Arrest") + ylab("Proportion of Arrest") + xlab("Domestic Type") + ggtitle("Proportion of Arrest made in original data and the modal predictions for Domestic True")
+
+
+```
+
+
+
+```{r}
+False_og <- crimes  %>%  filter(domestic_x  == "False")
+False_new <- crimes_new %>%  filter(domestic_x  == "False")
+False_og$domestic_x = "False_orig"
+False_new$domestic_x = "False_pred"
+
+Falseog <- subset(True_og, select = c(primary_type_x, location_description_x, domestic_x ,arrest_num))
+Falsenew <- subset(True_new, select = c(primary_type_x, location_description_x, domestic_x ,arrest_num))
+
+False <-rbind(Falseog, Falsenew)
+False$arrest_x <- as.logical(False$arrest_num)
+
+ggplot(False,aes(x = False$domestic_x,fill = False$arrest_x)) + theme(axis.text.x = element_text(angle = 0)) +
+    geom_bar(position = "fill") +scale_fill_discrete(name = "Crime Leading to Arrest") + ylab("Proportion of Arrest") + xlab("Domestic Type") + ggtitle("Proportion of Arrest made in original data and the modal predictions for Domestic False")
+```
+```{r, fig.height=7}
+ggplot(crimes,aes(y =primary_type_x))+geom_point(aes(x=probablities,color=arrest_x), size=3 , alpha = 0.7) + facet_wrap(~crimes$location_description_x) + xlab("Probability of arrest") + ylab("Type of crime")+ggtitle("Plot of Probablities and Actural arrest made True/False") 
+```
+```{r, fig.height=8 }
+
+ggplot(crimes,aes(y = location_description_x))+geom_point(aes(x=probablities,color=arrest_x), size=3 , alpha = 0.7) + facet_wrap(~crimes$primary_type_x) + xlab("Probability of Arrest") + ylab("Location of the crimes")+ggtitle('Plot of Probablities and Actual arrest made True/False')  + theme(axis.text.x = element_text(angle = 0))
+```
+
+
+```{r , fig.height=8} 
+
+ggplot(crimes,aes(y = location_description_x))+geom_point(aes(x=probablities,color=arrest_x), size=2 , alpha = 0.5) + facet_grid(crimes$domestic_x ~ crimes$primary_type_x) + xlab("Probability of Arrest") + ylab("Location of the crimes")+ggtitle("Plot of Probablities")  + theme(axis.text.x = element_text(angle = 90))
+
+```
+
+
+```{r}
+
+crimees_arrest_true <- crimes  %>%  filter(arrest_x  == "True")
+crime_t <- crimes %>%
+  group_by(primary_type_x,location_description_x) %>%
+  summarize(n = n()) %>% 
+  
+  mutate(pct = n/sum(n))
+
+prob_t = aggregate(probablities ~ primary_type_x + location_description_x, data = crimees_arrest_true, FUN = mean, na.rm = TRUE)
+
+merged_t = merge(crime_t, prob_t, by.x=c('primary_type_x', 'location_description_x'), by.y=c('primary_type_x', 'location_description_x'))
+
+```
+
+```{r, fig.height=8}
+ggplot(merged_t,aes(y = location_description_x))+geom_point(aes(probablities, color = 'Predicted Probabaility'), size=2 , alpha = 1) + facet_wrap(~merged_t$primary_type_x) + geom_point(aes( pct, color = 'Proportion arrest made True'), size=3 , alpha = 0.5)+ ggtitle("Comparision of Probablities and the Proportion of Arrest made True in The Data") 
+```
+
+
+
+```{r}
+library('sjstats')
+prop_f = crimes %>%
+  group_by(primary_type_x, location_description_x) %>%
+  prop(arrest_x  == "False")
+
+
+prop_t = crimes %>%
+  group_by(primary_type_x, location_description_x) %>%
+  prop(arrest_x  == "True")
+
+merged_prop = merge(prop_f, prop_t, by.x=c('primary_type_x', 'location_description_x'), by.y=c('primary_type_x', 'location_description_x'))
+
+prob = aggregate(probablities ~ primary_type_x + location_description_x, data = crimes, FUN = mean, na.rm = TRUE)
+
+merged_prop_prob = merge(prob, merged_prop, by.x=c('primary_type_x', 'location_description_x'), by.y=c('primary_type_x', 'location_description_x'))
+
+
+```
+
+```{r}
+names(merged_prop_prob)[names(merged_prop_prob) == "arrest_x==True"] <- "TrueProp"
+names(merged_prop_prob)[names(merged_prop_prob) == "arrest_x==False"] <- "FalseProp"
+```
+
+
+```{r , fig.height=8}
+ggplot(merged_prop_prob,aes(y = location_description_x))+geom_point(aes(probablities, color = 'Pridicted probabalties'), size=3 , alpha = 1) + facet_wrap(~merged_prop_prob$primary_type_x) + geom_point(aes( TrueProp, color = 'Proportions of arrest made True'), size=2 , alpha = 0.5) +  ggtitle("Comparision of Probablities and the Proportion of Arrest made True in The Data") + xlab("Probability of Arrest") + ylab("Location of the crimes")
+```
+
