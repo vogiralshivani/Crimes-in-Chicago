@@ -1,6 +1,4 @@
-# STAT S – 670 Exploratory Data Analysis
-
-CHICAGO CRIMES DATA ANALYSIS
+# Crimes in Chicago
 
 Team members: 
 
